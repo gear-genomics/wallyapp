@@ -87,11 +87,11 @@ function handleSuccess(data) {
 
 function showExample() {
     var samples = document.getElementById('samples')
-    samples.value = 'NA12878\nHG02611\nNA21099\n'
+    samples.value = 'NA19900\nNA19720\nHG02266\n'
     var regionStart = document.getElementById('regionStart')
-    regionStart.value = 127521550
+    regionStart.value = 33904080
     var regionEnd = document.getElementById('regionEnd')
-    regionEnd.value = 127521650
+    regionEnd.value = 33904200
     var selectchr = document.getElementById('chromosome')
     for (var i = 0 ; i < selectchr.options.length ; i++) {
 	if (selectchr.options[i].value == 'chr8') {
