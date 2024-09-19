@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>WallyWebApp: Genome plotter | GEAR</title>
+    <meta name="description" content="Plot aligned genomic reads." />
+    <link rel="stylesheet" href="https://www.gear-genomics.com/libs/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://www.gear-genomics.com/libs/fontawesome-free-6.2.1-web/css/all.min.css">
+    <link rel="stylesheet" href="static/css/gear.css" />
+  </head>
+
+  <body>
+    <header class="px-0 py-4">
+      <div class="container">
+        <h1 class="display-4 app-name">Wally</h1>
+        <p class="lead">Plot aligned genomic reads.</p>
+	<a class="plain" href="https://www.gear-genomics.com/contact" target="_blank">
+          <i class="fas fa-question"></i> Get help
+	</a>
+	·
+	<a class="plain" href="https://www.gear-genomics.com/citation" target="_blank">
+          <i class="fas fa-user-graduate"></i> Citation
+	</a>
+        ·
+        <a
+          class="plain"
+          target="_blank"
+          href="https://github.com/gear-genomics/wallyapp"
+        >
+          <i class="fab fa-github-alt"></i> Source
+        </a>
+      </div>
+    </header>
+
+   <main class="container">
+      <ul class="nav nav-fill mb-4" id="mainTab">
+        <li class="nav-item">
+          <a class="nav-link active" href="#input-tab">Input</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#result-tab" id="link-results">Results</a>
+        </li>
+	<li class="nav-item">
+	  <a class="nav-link" href="#help-tab" id="link-help">Help</a>
+	</li>
+      </ul>
+      <div class="tab-content" id="main-tabs">
+        <div class="tab-pane show active" id="input-tab">
+          <form>
+            <div class="row">
+	      <div class="col">
+                <div class="form-group">
+		  <label for="dataset">Data set</label>
+                  <select class="form-control" id="dataset">
+                    <option selected>1000 Genomes ONT Vienna GRCh38/hg38</option>
+		    <option>1000 Genomes ONT Vienna T2T-CHM13</option>
+		    <option>1000 Genomes Illumina high-coverage GRCh38/hg38</option>
+		  </select>
+		</div>
+              </div>
+	    </div>
+	    <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label for="chromosome">Chromosome</label>
+                  <select class="form-control" id="chromosome">
+                    <option>chr1</option>
+                    <option>chr2</option>
+                    <option>chr3</option>
+                    <option>chr4</option>
+                    <option>chr5</option>
+                    <option>chr6</option>
+                    <option>chr7</option>
+                    <option selected>chr8</option>
+                    <option>chr9</option>
+                    <option>chr10</option>		    
+                    <option>chr11</option>
+                    <option>chr12</option>
+                    <option>chr13</option>
+                    <option>chr14</option>
+                    <option>chr15</option>
+                    <option>chr16</option>
+                    <option>chr17</option>
+                    <option>chr18</option>
+                    <option>chr19</option>
+                    <option>chr20</option>
+                    <option>chr21</option>		    		    
+                    <option>chr22</option>
+                    <option>chrX</option>		    
+                    <option>chrY</option>		    
+                  </select>
+                </div>
+              </div>
+              <div class="col">
+                <div class="form-group">
+                  <label for="regionStart">Region start</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="regionStart"
+                    value="127521500"
+                    min="1"
+                    max="250000000"
+                  />
+                </div>
+              </div>
+              <div class="col">
+                <div class="form-group">
+                  <label for="regionEnd">Region end</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="regionEnd"
+                    value="127521600"
+                    min="1"
+                    max="250000000"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label for="samples">Sample identifiers</label>
+                  <textarea
+                    class="form-control text-monospace"
+                    id="samples"
+                    rows="5"
+                    spellcheck="false"
+                  >NA12878</textarea>
+                </div>
+              </div>
+            </div>
+          </form>
+          <div class="mb-3">
+            <button
+              type="submit"
+              class="btn btn-outline-primary"
+              id="btn-submit"
+            >
+              <i class="fas fa-rocket" style="margin-right: 5px;"></i>
+              Launch Analysis
+            </button>
+            <button
+              type="submit"
+              class="btn btn-outline-primary"
+              id="btn-example"
+            >
+              <i class="fas fa-eye" style="margin-right: 5px;"></i>
+              Show Example
+            </button>
+          </div>
+        </div>
+	
+        <div class="tab-pane" id="result-tab">
+          <div id="result-info" class="alert alert-info d-none" role="alert">
+            <i class="fas fa-spinner spinner"></i>
+            Analysis is running, please be patient.
+          </div>
+          <div id="result-error" class="alert alert-danger d-none" role="alert">
+            <i class="fas fa-fire"></i>
+            <span id="error-message"></span>
+          </div>
+          <section id="result-container" class="d-none">
+            <div class="form-row align-items-center">
+              <div class="col-auto">
+                <a
+                  id="link-png"
+                  class="btn btn-outline-primary"
+                  href="#"
+                  target="_blank"
+                  role="button"
+                  data-toggle="tooltip"
+                  data-placement="top"
+                  title="PNG link is valid for 24h."
+                >
+                  <i class="far fa-file" style="margin-right: 5px;"></i> View
+                  PNG
+                </a>
+              </div>
+	    </div>
+	    <div class="mt-4">
+	      <h4>Genome plot</h4>
+	      <img id="img-png" src="#" alt="Genome plot" width="1200" height="1200" />
+            </div>
+          </section>
+        </div>
+
+	<div class="tab-pane" id="help-tab">
+	  <h4>Application Description</h4>
+	  <p>
+	    <a target="_blank" href="https://github.com/tobiasrausch/wally">Wally</a> is a commmand-line application to plot aligned reads. This is a simple frontend web application for wally that allows plotting slices of the 1000 Genomes Oxford Nanopore Technologies (ONT) data hosted on the International Genome Sample Resource (<a target="_blank" href="https://www.internationalgenome.org/">IGSR</a>) <a target="_blank" href="http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1KG_ONT_VIENNA/">FTP site</a>. You can visualize both the CHM13 (T2T) and GRCh38 (hg38) alignments. All available data sets and samples can be found <a target="_blank" href="https://github.com/gear-genomics/wallyapp/datasets">here</a>. For short-read data sets, the paired-end coloring follows <a target="_blank" href="https://github.com/dellytools/delly">delly's</a> structural variant nomenclature and is described <a target="_blank" href="https://github.com/tobiasrausch/wally#paired-end-view">here</a>. Please note that many feature of <a target="_blank" href="https://github.com/tobiasrausch/wally">wally</a> are not yet available in the frontend web application like split-alignment views, dotplots or match views. Please use the command-line application for this.
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="float-left">
+          <a class="plain" target="_blank" href="https://www.gear-genomics.com">
+            GEAR ~
+            <i class="fas fa-home"></i>
+          </a>
+          ·
+          <a
+            class="plain"
+            target="_blank"
+            href="https://github.com/gear-genomics"
+          >
+            <i class="fab fa-github-alt"></i>
+          </a>
+          ·
+          <a
+            class="plain"
+            target="_blank"
+            href="https://www.gear-genomics.com/terms"
+          >
+            Terms of Use
+          </a>
+          ·
+          <a
+            class="plain"
+            target="_blank"
+            href="https://www.gear-genomics.com/contact"
+          >
+            Contact Us
+          </a>
+        </div>
+        <div class="float-right">
+          Supported by
+          <a class="plain" target="_blank" href="https://www.embl.de/">
+            <img
+              class="footer-logo"
+              alt="EMBL logo"
+              src="static/img/embl.svg"
+            />
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://www.gear-genomics.com/libs/js/jquery-3.2.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://www.gear-genomics.com/libs/js/popper-1.12.9/popper.min.js" crossorigin="anonymous"></script>
+    <script src="https://www.gear-genomics.com/libs/bootstrap/4.0.0/js/bootstrap.min.js" crossorigin="anonymous"></script>   
+    <script src="https://www.gear-genomics.com/libs/js/axios-0.27.0.min.js"></script>
+    <script src="static/js/wallyapp.js"></script>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+data/
+genome/
+server/nohup.out
+server/run.sh
+*.pyc
+
+# Backup files
+*~
