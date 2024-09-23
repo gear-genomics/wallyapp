@@ -45,20 +45,31 @@ then
     exit 1;
 fi
 
+## Get input parameters
+UUID=`echo ${REGION} | sed 's/^.*://'`
+CHR=`echo ${REGION} | sed 's/:.*$//'`
+POSBEG=`echo ${REGION} | sed "s/^${CHR}://" | sed "s/:${UUID}$//" | sed 's/-.*$//'`
+POSEND=`echo ${REGION} | sed "s/^${CHR}://" | sed "s/:${UUID}$//" | sed 's/^.*-//'`
+WINSIZE=`echo "${POSEND} - ${POSBEG}" | bc -l`
+CENTPOINT=`echo "${POSBEG} + ${WINSIZE} / 2" | bc -l | awk '{print int($1);}'`
+ABSWINSIZE=50000
+MINWIN=`echo "${CENTPOINT} - ${ABSWINSIZE}" | bc -l`
+MAXWIN=`echo "${CENTPOINT} + ${ABSWINSIZE}" | bc -l`
+if [ ${MINWIN} -lt 1 ]; then MINWIN=1; fi
+
 ## Slice BAMs
 shift 3
 for SAMPLE in $@
 do
     if [ `echo ${SAMPLE} | awk '{print length($1);}'` -eq 7 ]
     then
-	REGSHORT=`echo ${REGION} | sed 's/:[^:]*$//'`
 	URL=`grep -w "${SAMPLE}" ${BASEDIR}/datasets/${DATASET}.tsv`
 	if [ $? -ne 0 ]
 	then
 	    >&2 echo "ERROR: Sample is not available in the data set: " ${SAMPLE}
 	    exit 1;
 	fi
-	samtools view --reference ${BASEDIR}/genome/${REF}.fa.gz -b ${URL} ${REGSHORT} > ${SAMPLE}.bam
+	samtools view --reference ${BASEDIR}/genome/${REF}.fa.gz -b ${URL} ${CHR}:${MINWIN}-${MAXWIN} > ${SAMPLE}.bam
 	if [ $? -ne 0 ]
 	then
 	    >&2 echo "ERROR: Samtools failed!"
@@ -77,14 +88,42 @@ done
 NUMS=`ls *.bam 2> /dev/null | wc -l`
 if [ ${NUMS} -gt 0 ]
 then
+    ## Create main plot
     HEIGHT=`echo "${NUMS} * 360" | bc -l`
-    wally region -y ${HEIGHT} -pcu -r ${REGION} -g ${BASEDIR}/genome/${REF}.fa.gz *.bam
+    wally region -y ${HEIGHT} -pcu -r ${REGION}-zoom5 -g ${BASEDIR}/genome/${REF}.fa.gz *.bam
     if [ $? -ne 0 ]
     then
 	>&2 echo "ERROR: Wally command-line application failed!"
 	exit 1;
     fi
-    rm -f *.bam *.bam.bai *.cram *.cram.crai
+    ## Create zoom versions
+    UWINSIZE=${WINSIZE}
+    LWINSIZE=${WINSIZE}
+    LWINSIZE=`echo "${LWINSIZE} / 2" | bc -l | awk '{print int($1);}'`
+    rm -f ${UUID}.regions.tsv
+    for ZOOM in `seq 1 5`
+    do
+	## Zoom-out
+	POSBEG=`echo "${CENTPOINT} - ${UWINSIZE}" | bc -l`
+	POSEND=`echo "${CENTPOINT} + ${UWINSIZE}" | bc -l`
+	UZOOM=`echo "5 + ${ZOOM}" | bc -l` 
+	if [ ${MINWIN} -gt ${POSBEG} ]; then POSBEG=${MINWIN}; fi
+	if [ ${MAXWIN} -lt ${POSEND} ]; then POSEND=${MAXWIN}; fi
+	echo -e "${CHR}\t${POSBEG}\t${POSEND}\t${UUID}-zoom${UZOOM}" >> ${UUID}.regions.tsv
+	UWINSIZE=`echo "${UWINSIZE} * 2" | bc -l`
+	
+	## Zoom-in
+	LWINSIZE=`echo "${LWINSIZE} / 2" | bc -l | awk '{print int($1);}'`
+	POSBEG=`echo "${CENTPOINT} - ${LWINSIZE}" | bc -l`
+	POSEND=`echo "${CENTPOINT} + ${LWINSIZE}" | bc -l`
+	LZOOM=`echo "5 - ${ZOOM}" | bc -l` 
+	if [ ${MINWIN} -gt ${POSBEG} ]; then POSBEG=${MINWIN}; fi
+	if [ ${MAXWIN} -lt ${POSEND} ]; then POSEND=${MAXWIN}; fi
+	if [ ${LWINSIZE} -lt 10 ]; then LWINSIZE=10; fi
+	echo -e "${CHR}\t${POSBEG}\t${POSEND}\t${UUID}-zoom${LZOOM}" >> ${UUID}.regions.tsv
+    done
+    ## Run zoom-levels in background
+    ( wally region -y ${HEIGHT} -pcu -R ${UUID}.regions.tsv -g ${BASEDIR}/genome/${REF}.fa.gz *.bam; rm -f *.bam *.bam.bai *.cram *.cram.crai ) &
 else
     if [ $? -ne 0 ]
     then

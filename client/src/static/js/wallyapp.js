@@ -19,6 +19,10 @@ submitButton.addEventListener('click', function() {
 
 const exampleButton = document.getElementById('btn-example')
 exampleButton.addEventListener('click', showExample)
+const plusButton = document.getElementById('btn-plus')
+plusButton.addEventListener('click', zoomIn)
+const minusButton = document.getElementById('btn-minus')
+minusButton.addEventListener('click', zoomOut)
 
 const chromosome = document.getElementById('chromosome')
 const dataset = document.getElementById('dataset')
@@ -83,6 +87,45 @@ function handleSuccess(data) {
   }
   img.src = `${API_URL}/${downloadUrl}/png`
   imgElement.src = `${API_URL}/${downloadUrl}/png`
+}
+
+
+function zoomIn() {
+  var url = imgElement.src
+  var path = url.replace(new RegExp('/png$'), '').split('-');
+  var zoom = Number(path[path.length - 1].replace(new RegExp('^zoom'), ''))
+  if (zoom > 0) {  
+    zoom = zoom - 1;
+  }
+  path = path.slice(0, path.length - 1);
+  var newUrl = path.join('-') + "-zoom" + zoom.toString() + "/png"    
+  const img = new Image();
+  img.onload = function() {
+      imgElement.width = this.width
+      imgElement.height = this.height
+  }
+  img.src = `${newUrl}`
+  imgElement.src = `${newUrl}`
+  linkPng.href = `${newUrl}`
+}
+
+function zoomOut() {
+  var url = imgElement.src
+  var path = url.replace(new RegExp('/png$'), '').split('-');
+  var zoom = Number(path[path.length - 1].replace(new RegExp('^zoom'), ''))
+  if (zoom < 10) {  
+    zoom = zoom + 1;
+  }
+  path = path.slice(0, path.length - 1);
+  var newUrl = path.join('-') + "-zoom" + zoom.toString() + "/png"    
+  const img = new Image();
+  img.onload = function() {
+      imgElement.width = this.width
+      imgElement.height = this.height
+  }
+  img.src = `${newUrl}`
+  imgElement.src = `${newUrl}`
+  linkPng.href = `${newUrl}`    
 }
 
 function showExample() {

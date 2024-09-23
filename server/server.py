@@ -22,7 +22,7 @@ app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024   #maximum of 8MB
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in set(['png'])
 
-uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-zoom[0-9]*$')
 
 def is_valid_uuid(s):
     return uuid_re.match(s) is not None
@@ -80,6 +80,8 @@ def upload_file():
             return jsonify(errors = [{"title": "Region start needs to be smaller than region end!"}]), 400
         if (regionEnd - regionStart) >= 100000:
             return jsonify(errors = [{"title": "Region needs to be smaller than 100Kbp!"}]), 400
+        if (regionEnd - regionStart) <= 10:
+            return jsonify(errors = [{"title": "Region needs to be larger than 10bp!"}]), 400
         samples = None
         if 'samples' in request.form.keys():
             samples = request.form['samples']
@@ -112,7 +114,7 @@ def upload_file():
             with open(errfile, "r") as err:
                 errInfo = ": " + err.read()
             return jsonify(errors = [{"title": "Error in running Wally" + errInfo}]), 400
-        urlout = "download/" + uuidstr
+        urlout = "download/" + uuidstr + "-zoom5"
         dt = {}
         dt["url"] = urlout
         return jsonify(data=dt), 200
