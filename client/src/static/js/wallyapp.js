@@ -23,6 +23,10 @@ const plusButton = document.getElementById('btn-plus')
 plusButton.addEventListener('click', zoomIn)
 const minusButton = document.getElementById('btn-minus')
 minusButton.addEventListener('click', zoomOut)
+const leftButton = document.getElementById('btn-left1')
+leftButton.addEventListener('click', shiftLeft)
+const rightButton = document.getElementById('btn-right1')
+rightButton.addEventListener('click', shiftRight)
 
 const chromosome = document.getElementById('chromosome')
 const dataset = document.getElementById('dataset')
@@ -126,6 +130,28 @@ function zoomOut() {
   img.src = `${newUrl}`
   imgElement.src = `${newUrl}`
   linkPng.href = `${newUrl}`    
+}
+
+function shiftLeft() {
+    const start = Number.parseInt(regionStart.value, 10)
+    const end = Number.parseInt(regionEnd.value, 10)
+    const windowSize = Math.floor((end - start) / 2)
+    const newStart = Math.max(1, start - windowSize)
+    const newEnd = Math.max(newStart + 10, end - windowSize)
+    regionStart.value = newStart
+    regionEnd.value = newEnd
+    run()
+}
+
+function shiftRight() {
+    const start = Number.parseInt(regionStart.value, 10)
+    const end = Number.parseInt(regionEnd.value, 10)
+    const windowSize = Math.floor((end - start) / 2)
+    const newStart = start + windowSize
+    const newEnd = end + windowSize
+    regionStart.value = newStart
+    regionEnd.value = newEnd
+    run()
 }
 
 function showExample() {
