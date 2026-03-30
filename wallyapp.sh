@@ -25,14 +25,14 @@ DATASET=$2
 REF=`echo ${DATASET} | sed 's/^.*_//'`
 if [ ! -f ${BASEDIR}/genome/${REF}.fa.gz ]
 then
-    >&2 echo "ERROR: Reference genome is missing!" ${REF}.fa.gz
+    >&2 echo "ERROR: Reference genome is missing: ${REF}.fa.gz"
     exit 1;
 fi
 
 ## Check output directory
 if [ ! -d ${OUTDIR} ]
 then
-    >&2 echo "ERROR: Output directory does not exist: " ${OUTDIR}
+    >&2 echo "ERROR: Output directory does not exist: ${OUTDIR}"
     exit 1;
 fi
 
@@ -41,7 +41,7 @@ cd ${OUTDIR}
 REGION=$3
 if [ `echo ${REGION} | grep -c -P "^[A-Za-z0-9]*:[0-9]*-[0-9]*:[A-Za-z0-9\-]*$"` -ne 1 ]
 then
-    >&2 echo "ERROR: Incorrect region format: " ${REGION}
+    >&2 echo "ERROR: Incorrect region format: ${REGION}"
     exit 1;
 fi
 
@@ -63,24 +63,30 @@ for SAMPLE in $@
 do
     if [ `echo ${SAMPLE} | awk '{print length($1);}'` -eq 7 ]
     then
+	set +e
 	URL=`grep -w "${SAMPLE}" ${BASEDIR}/datasets/${DATASET}.tsv`
-	if [ $? -ne 0 ]
+	GREP_RC=$?
+	set -e
+	if [ ${GREP_RC} -ne 0 ]
 	then
-	    >&2 echo "ERROR: Sample is not available in the data set: " ${SAMPLE}
+	    >&2 echo "ERROR: Sample is not available in the data set: ${SAMPLE}"
 	    exit 1;
 	fi
 	samtools view --reference ${BASEDIR}/genome/${REF}.fa.gz -b ${URL} ${CHR}:${MINWIN}-${MAXWIN} > ${SAMPLE}.bam
 	if [ $? -ne 0 ]
 	then
-	    >&2 echo "ERROR: Samtools failed!"
+	    >&2 echo "ERROR: Samtools view failed for ${SAMPLE}"
 	    exit 1;
 	fi
 	samtools index ${SAMPLE}.bam
 	if [ $? -ne 0 ]
 	then
-	    >&2 echo "ERROR: Samtools indexing failed!"
+	    >&2 echo "ERROR: Samtools indexing failed for ${SAMPLE}"
 	    exit 1;
 	fi
+    else
+	>&2 echo "ERROR: Sample is not available in the data set: ${SAMPLE}"
+	exit 1;
     fi
 done
 
@@ -125,9 +131,6 @@ then
     ## Run zoom-levels in background
     ( wally region -y ${HEIGHT} -pcu -R ${UUID}.regions.tsv -g ${BASEDIR}/genome/${REF}.fa.gz *.bam; rm -f *.bam *.bam.bai *.cram *.cram.crai ) &
 else
-    if [ $? -ne 0 ]
-    then
-	>&2 echo "ERROR: No input alignment files present!"
-	exit 1;
-    fi
+    >&2 echo "ERROR: No input alignment files were selected. Please check that your sample names are valid for the selected data set."
+    exit 1;
 fi

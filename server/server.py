@@ -68,14 +68,20 @@ def upload_file():
             return jsonify(errors = [{"title": "Chromosome is missing!"}]), 400
         regionStart = 0
         if 'regionStart' in request.form.keys():
-            regionStart = int(request.form['regionStart'])
+            try:
+                regionStart = int(request.form['regionStart'])
+            except (ValueError, TypeError):
+                return jsonify(errors = [{"title": "Region start must be an integer!"}]), 400
         else:
-            return jsonify(errors = [{"title": "Region start is incorrect!"}]), 400
+            return jsonify(errors = [{"title": "Region start is missing!"}]), 400
         regionEnd = 0
         if 'regionEnd' in request.form.keys():
-            regionEnd = int(request.form['regionEnd'])
+            try:
+                regionEnd = int(request.form['regionEnd'])
+            except (ValueError, TypeError):
+                return jsonify(errors = [{"title": "Region end must be an integer!"}]), 400
         else:
-            return jsonify(errors = [{"title": "Region end is incorrect!"}]), 400
+            return jsonify(errors = [{"title": "Region end is missing!"}]), 400
         if regionStart >= regionEnd:
             return jsonify(errors = [{"title": "Region start needs to be smaller than region end!"}]), 400
         if (regionEnd - regionStart) >= 100000:
@@ -86,13 +92,14 @@ def upload_file():
         if 'samples' in request.form.keys():
             samples = request.form['samples']
             s = set(samples.replace('\r\n','\n').strip().split('\n'))
+            s.discard('')
             if len(s) < 1:
                 return jsonify(errors = [{"title": "Please provide sample names!"}]), 400
             if len(s) > 20:
                 return jsonify(errors = [{"title": "Maximum number of samples is 20!"}]), 400
             samples = ' '.join(s)
-            if samples == '':
-                return jsonify(errors = [{"title": "Please provide sample names!"}]), 400
+        else:
+            return jsonify(errors = [{"title": "Please provide sample names!"}]), 400
         
         # Run wally
         outdir = os.path.join(sf)
@@ -110,10 +117,15 @@ def upload_file():
                     else:
                         return jsonify(errors = [{"title": "OSError " + str(e.errno)  + " running WallyApp script!"}]), 400
         if return_code != 0:
-            errInfo = "!"
-            with open(errfile, "r") as err:
-                errInfo = ": " + err.read()
-            return jsonify(errors = [{"title": "Error in running Wally" + errInfo}]), 400
+            err_detail = ""
+            try:
+                with open(errfile, "r") as err:
+                    err_detail = err.read().strip()
+            except IOError:
+                pass
+            if not err_detail:
+                err_detail = "Wally exited with an unexpected error (exit code %d). Please check your inputs." % return_code
+            return jsonify(errors = [{"title": err_detail}]), 400
         urlout = "download/" + uuidstr + "-zoom5"
         dt = {}
         dt["url"] = urlout
