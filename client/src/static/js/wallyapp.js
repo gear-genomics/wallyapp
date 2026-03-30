@@ -39,19 +39,80 @@ const resultInfo = document.getElementById('result-info')
 const resultError = document.getElementById('result-error')
 let downloadUrl
 
+function parseCoordinate(raw) {
+  const cleaned = String(raw).replace(/,/g, '').trim()
+  return Number.parseInt(cleaned, 10)
+}
+
+function validateInputs(rStart, rEnd, samplesValue) {
+  if ( (isNaN(rStart)) || (rStart < 1) ) {
+    return 'Region start must be a positive integer.'
+  }
+  if ( (isNaN(rEnd)) || (rEnd < 1) ) {
+    return 'Region end must be a positive integer.'
+  }
+  if (rStart >= rEnd) {
+    return `Region start (${rStart.toLocaleString()}) must be less than region end (${rEnd.toLocaleString()}).`
+  }
+  const samples = samplesValue
+    .split(/[\n,]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+  if (samples.length === 0) {
+    return 'Please enter at least one sample name.'
+  }
+  return null
+}
+
+function extractErrorMessage(err) {
+  if (err.response) {
+    const data = err.response.data
+    // Standard JSON:API error
+    if ((data) && (Array.isArray(data.errors)) && (data.errors.length > 0) ) {
+      return data.errors
+        .map(e => (e.title || e.message || JSON.stringify(e)))
+        .join('; ')
+    }
+    if ( (data) && (typeof data.message === 'string') && (data.message.trim()) ) {
+      return data.message.trim()
+    }
+    if ( (data) && (typeof data.error === 'string') && (data.error.trim()) ) {
+      return data.error.trim()
+    }
+    if ( (typeof data === 'string') && (data.trim()) ) {
+      return data.trim()
+    }
+    // HTTP status fallback
+    return `Server error: ${err.response.status} ${err.response.statusText || ''}`.trim()
+  }
+  if (err.message) { // Network errors
+    return err.message
+  }
+  return String(err)
+}
+
 function run() {
   const ds = dataset.querySelector('option:checked').value    
   const chr = chromosome.querySelector('option:checked').value
-  const rStart = Number.parseInt(regionStart.value, 10)
-  const rEnd = Number.parseInt(regionEnd.value, 10)
+  const rStart = parseCoordinate(regionStart.value)
+  const rEnd = parseCoordinate(regionEnd.value)
+  const samplesValue = document.getElementById('samples').value
 
+  const validationError = validateInputs(rStart, rEnd, samplesValue)
+  if (validationError) {
+    hideElement(resultInfo)
+    hideElement(resultContainer)
+    showElement(resultError)
+    resultError.querySelector('#error-message').textContent = validationError
+    return
+  }
 
   const formData = new FormData()
   formData.append('dataset', ds)
   formData.append('chr', chr)
   formData.append('regionStart', rStart)
   formData.append('regionEnd', rEnd)
-  formData.append('samples', document.getElementById('samples').value)
+  formData.append('samples', samplesValue)
 
   hideElement(resultContainer)
   hideElement(resultError)
@@ -65,12 +126,7 @@ function run() {
       }
     })
     .catch(err => {
-      let errorMessage = err
-      if (err.response) {
-        errorMessage = err.response.data.errors
-          .map(error => error.title)
-          .join('; ')
-      }
+      const errorMessage = extractErrorMessage(err)
       hideElement(resultInfo)
       showElement(resultError)
       resultError.querySelector('#error-message').textContent = errorMessage
@@ -84,7 +140,7 @@ function handleSuccess(data) {
 
   downloadUrl = data.url
   linkPng.href = `${API_URL}/${downloadUrl}/png`
-  const img = new Image();
+  const img = new Image()
   img.onload = function() {
       imgElement.width = this.width
       imgElement.height = this.height
@@ -96,45 +152,46 @@ function handleSuccess(data) {
 
 function zoomIn() {
   var url = imgElement.src
-  var path = url.replace(new RegExp('/png$'), '').split('-');
+  var path = url.replace(new RegExp('/png$'), '').split('-')
   var zoom = Number(path[path.length - 1].replace(new RegExp('^zoom'), ''))
   if (zoom > 0) {  
-    zoom = zoom - 1;
+    zoom = zoom - 1
   }
-  path = path.slice(0, path.length - 1);
-  var newUrl = path.join('-') + "-zoom" + zoom.toString() + "/png"    
-  const img = new Image();
+  path = path.slice(0, path.length - 1)
+  var newUrl = path.join('-') + '-zoom' + zoom.toString() + '/png'
+  const img = new Image()
   img.onload = function() {
       imgElement.width = this.width
       imgElement.height = this.height
   }
-  img.src = `${newUrl}`
-  imgElement.src = `${newUrl}`
-  linkPng.href = `${newUrl}`
+  img.src = newUrl
+  imgElement.src = newUrl
+  linkPng.href = newUrl
 }
 
 function zoomOut() {
   var url = imgElement.src
-  var path = url.replace(new RegExp('/png$'), '').split('-');
+  var path = url.replace(new RegExp('/png$'), '').split('-')
   var zoom = Number(path[path.length - 1].replace(new RegExp('^zoom'), ''))
   if (zoom < 10) {  
-    zoom = zoom + 1;
+    zoom = zoom + 1
   }
-  path = path.slice(0, path.length - 1);
-  var newUrl = path.join('-') + "-zoom" + zoom.toString() + "/png"    
-  const img = new Image();
+  path = path.slice(0, path.length - 1)
+  var newUrl = path.join('-') + '-zoom' + zoom.toString() + '/png'
+  const img = new Image()
   img.onload = function() {
       imgElement.width = this.width
       imgElement.height = this.height
   }
-  img.src = `${newUrl}`
-  imgElement.src = `${newUrl}`
-  linkPng.href = `${newUrl}`    
+  img.src = newUrl
+  imgElement.src = newUrl
+  linkPng.href = newUrl    
 }
 
 function shiftLeft() {
-    const start = Number.parseInt(regionStart.value, 10)
-    const end = Number.parseInt(regionEnd.value, 10)
+    const start = parseCoordinate(regionStart.value)
+    const end = parseCoordinate(regionEnd.value)
+    if ((isNaN(start)) || (isNaN(end))) return
     const windowSize = Math.floor((end - start) / 2)
     const newStart = Math.max(1, start - windowSize)
     const newEnd = Math.max(newStart + 10, end - windowSize)
@@ -144,8 +201,9 @@ function shiftLeft() {
 }
 
 function shiftRight() {
-    const start = Number.parseInt(regionStart.value, 10)
-    const end = Number.parseInt(regionEnd.value, 10)
+    const start = parseCoordinate(regionStart.value)
+    const end = parseCoordinate(regionEnd.value)
+    if ((isNaN(start)) || (isNaN(end))) return
     const windowSize = Math.floor((end - start) / 2)
     const newStart = start + windowSize
     const newEnd = end + windowSize
@@ -162,15 +220,15 @@ function showExample() {
     var regionEnd = document.getElementById('regionEnd')
     regionEnd.value = 33904200
     var selectchr = document.getElementById('chromosome')
-    for (var i = 0 ; i < selectchr.options.length ; i++) {
+    for (var i = 0; i < selectchr.options.length; i++) {
 	if (selectchr.options[i].value == 'chr8') {
-	    selectchr.selectedIndex = i;
+	    selectchr.selectedIndex = i
 	}
     }
     var selectds = document.getElementById('dataset')
-    for (var i = 0 ; i < selectds.options.length ; i++) {
+    for (var i = 0; i < selectds.options.length; i++) {
 	if (selectds.options[i].value == '1000 Genomes ONT Vienna GRCh38/hg38') {
-	    selectds.selectedIndex = i;
+	    selectds.selectedIndex = i
 	}
     }
 }    
